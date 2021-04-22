@@ -1,0 +1,70 @@
+--Store Procedure / Function / SQL
+
+----/2.2a
+update categorys
+set price=price*1.1
+where CAT_DATE >= '01-SEP-2020' and CAT_NAME='Silk';
+----/2.2b
+
+select o.o_id,o.total_price, o.cus_id, o.e_id
+from bolt b ,categorys c ,supplier s,orders o
+where b.cat_id = c.cat_id and s.s_id = c.s_id and s.name='Silk Agency' and o.o_id=b.o_id;
+
+----/2.2c
+create or replace function Total_purchasePrice_sup(sup_id in supplier.s_id%TYPE)
+return number
+as
+ sum_price number;
+begin
+    select sum(purchase_price) into sum_price
+    from  provide
+    where s_id=sup_id;
+    return sum_price;
+end;
+/
+--execute
+select Total_purchasePrice_sup(1)
+from dual;
+
+----/2.2d
+CREATE OR REPLACE PROCEDURE sort_supplier (
+    startday  IN  DATE,
+    endday    IN  DATE
+) AS
+
+    sup_id     NUMBER;
+    count_cate  NUMBER;
+    CURSOR cursorcate IS
+    SELECT
+        s_id,
+        COUNT(s_id)
+    FROM
+        categorys
+    where startday <= cat_date
+           AND endday >= cat_date
+    GROUP BY
+        s_id
+    ORDER BY
+        COUNT(s_id) DESC;
+
+BEGIN
+    OPEN cursorcate;
+    LOOP
+        FETCH cursorcate INTO
+            sup_id,
+            count_cate;
+        IF cursorcate%found THEN
+            dbms_output.put_line('s_id: '
+                                 || sup_id
+                                 || ' number of categorys: '
+                                 || count_cate);
+        END IF;
+        EXIT WHEN cursorcate%notfound;
+    END LOOP;
+    CLOSE cursorcate;
+END;
+/
+
+--execute:
+SET SERVEROUTPUT ON;
+EXECUTE sort_supplier('20/JUN/2020', '01/SEP/2020');
